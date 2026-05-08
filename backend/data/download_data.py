@@ -1,4 +1,5 @@
 import yfinance as yf
+import pathlib
 
 ticker = input("Enter ticker: ").upper()
 
@@ -19,8 +20,9 @@ if hasattr(data.columns, "levels"):
 
 data = data.reset_index()
 
-filename = f"{ticker}.csv"
+BASE_DIR = pathlib.Path(__file__).resolve().parent
+file_path = BASE_DIR / f"{ticker}.csv"
 
-data.to_csv(filename, index=False)
+data.to_csv(file_path, index=False)
 
-print(f"Data saved to {filename}")
+print(f"Data saved to {file_path}")

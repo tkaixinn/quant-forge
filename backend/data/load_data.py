@@ -1,29 +1,26 @@
 import pandas as pd
+import pathlib
 
-def load_csv(path):
+def load_csv(filename):
 
-    data = pd.read_csv(path)
+    base_dir = pathlib.Path(__file__).resolve().parent
+    path = base_dir / filename
 
-    data["Date"] = pd.to_datetime(data["Date"])
+    if not path.exists():
+        raise FileNotFoundError(f"CSV not found in data folder: {path}")
 
-    required_columns = [
-        "Date",
-        "Open",
-        "High",
-        "Low",
-        "Close",
-        "Volume"
-    ]
+    df = pd.read_csv(path)
 
-    for column in required_columns:
-        if column not in data.columns:
-            raise ValueError(f"Missing required column: {column}")
+    if "Date" not in df.columns:
+        df = df.rename(columns={df.columns[0]: "Date"})
 
-    return data
+    df["Date"] = pd.to_datetime(df["Date"])
+    df = df.sort_values("Date")
 
+    required = ["Date", "Open", "High", "Low", "Close", "Volume"]
 
-filename = input("Enter CSV filename: ")
+    for col in required:
+        if col not in df.columns:
+            raise ValueError(f"Missing required column: {col}")
 
-df = load_csv(filename)
-
-print(df.head())
+    return df, path
