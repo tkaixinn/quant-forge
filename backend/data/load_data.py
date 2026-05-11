@@ -1,5 +1,6 @@
 import pandas as pd
 import pathlib
+import yfinance as yf
 
 
 def _find_file_by_normalized_name(base_dir: pathlib.Path, filename: str):
@@ -16,6 +17,30 @@ def _find_file_by_normalized_name(base_dir: pathlib.Path, filename: str):
     return None
 
 
+def _download_and_cache_ticker(base_dir: pathlib.Path, ticker: str):
+    """Download ticker data from yfinance and cache it as a CSV."""
+    data = yf.download(
+        ticker,
+        period="10y",
+        auto_adjust=False,
+        progress=False,
+    )
+
+    if data.empty:
+        raise FileNotFoundError(f"No downloadable data found for ticker: {ticker}")
+
+    if isinstance(data.columns, pd.MultiIndex):
+        data.columns = data.columns.get_level_values(0)
+
+    data = data.dropna().reset_index()
+
+    # Cache for later use
+    cache_path = base_dir / f"{ticker.upper()}.csv"
+    data.to_csv(cache_path, index=False)
+
+    return cache_path
+
+
 def load_csv(filename: str):
     base_dir = pathlib.Path(__file__).resolve().parent
 
@@ -25,17 +50,21 @@ def load_csv(filename: str):
 
     path = base_dir / filename
 
-    # try a few common fallbacks if exact path not found
     if not path.exists():
-        # try adding .csv if user omitted extension
+   
         if pathlib.Path(filename).suffix == "":
             path = base_dir / (filename + ".csv")
 
     if not path.exists():
-        # try to find by matching names ignoring whitespace/case
+
         found = _find_file_by_normalized_name(base_dir, filename)
         if found is not None:
             path = found
+
+    if not path.exists():
+
+        ticker = pathlib.Path(filename).stem.upper()
+        path = _download_and_cache_ticker(base_dir, ticker)
 
     if not path.exists():
         files = ", ".join([f.name for f in base_dir.iterdir() if f.is_file()])
