@@ -92,6 +92,8 @@ def run_backtest(
     portfolio = Portfolio(initial_cash=initial_cash)
     portfolio_values = []
     positions = []
+    trade_actions = []
+    execution_signals = []
 
     for i in range(len(df)):
         price = df.loc[i, "Close"]
@@ -101,16 +103,25 @@ def run_backtest(
         else:
             signal = df.loc[i - 1, "signal"]
 
+        execution_signals.append(signal)
+
         if signal == 1 and portfolio.shares == 0:
             execute_buy(portfolio, price)
+            trade_action = 1
         elif signal == -1 and portfolio.shares > 0:
             execute_sell(portfolio, price)
+            trade_action = -1
+        else:
+            trade_action = 0
 
         portfolio_value = portfolio.total_value(price)
         portfolio_values.append(portfolio_value)
         positions.append(portfolio.shares)
+        trade_actions.append(trade_action)
 
     df["position"] = positions
+    df["trade_action"] = trade_actions
+    df["execution_signal"] = execution_signals
     df["portfolio_value"] = portfolio_values
     df["strategy_returns"] = df["portfolio_value"].pct_change()
 
@@ -122,6 +133,7 @@ def run_backtest(
     return {
         "df": df,
         "report": report,
+        "initial_cash": initial_cash,
         "final_value": final_value,
         "total_return": total_return,
         "params_used": params_used,

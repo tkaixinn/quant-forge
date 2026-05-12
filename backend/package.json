@@ -1,0 +1,14 @@
+{
+  "name": "quant-forge-backend",
+  "version": "0.1.0",
+  "description": "Quant Forge Flask API",
+  "main": "app.py",
+  "private": true,
+  "scripts": {
+    "dev": "python run_dev.py",
+    "start": "python run_dev.py",
+    "test": "python -m pytest tests/ || true"
+  },
+  "keywords": ["trading", "backtesting", "flask"],
+  "license": "MIT"
+}

@@ -41,7 +41,7 @@ def _download_and_cache_ticker(base_dir: pathlib.Path, ticker: str):
     return cache_path
 
 
-def load_csv(filename: str):
+def load_csv(filename: str, start_date: str = None, end_date: str = None):
     base_dir = pathlib.Path(__file__).resolve().parent
 
     # sanitize user input
@@ -79,6 +79,12 @@ def load_csv(filename: str):
 
     df["Date"] = pd.to_datetime(df["Date"])
     df = df.sort_values("Date")
+    
+    # Filter by date range if provided
+    if start_date is not None:
+        df = df[df["Date"] >= pd.to_datetime(start_date)]
+    if end_date is not None:
+        df = df[df["Date"] <= pd.to_datetime(end_date)]
 
     required = ["Date", "Open", "High", "Low", "Close", "Volume"]
 

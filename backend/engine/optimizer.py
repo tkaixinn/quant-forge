@@ -9,7 +9,7 @@ from data.load_data import load_csv
 from engine.backtest_core import run_backtest
 
 
-def optimize_momentum(df, window_range=(10, 50), step=5):
+def optimize_momentum(df, window_range=(10, 50), step=5, initial_cash=10000):
 
     results = []
     min_window, max_window = window_range
@@ -24,6 +24,7 @@ def optimize_momentum(df, window_range=(10, 50), step=5):
             result = run_backtest(
                 df,
                 strategy_name="momentum",
+                initial_cash=initial_cash,
                 strategy_params={"window": window}
             )
             
@@ -42,7 +43,7 @@ def optimize_momentum(df, window_range=(10, 50), step=5):
 
 
 def optimize_mean_reversion(df, window_range=(10, 50), threshold_range=(1, 3), 
-                            window_step=5, threshold_step=0.5):
+                            window_step=5, threshold_step=0.5, initial_cash=10000):
   
     results = []
     min_window, max_window = window_range
@@ -67,6 +68,7 @@ def optimize_mean_reversion(df, window_range=(10, 50), threshold_range=(1, 3),
             result = run_backtest(
                 df,
                 strategy_name="mean_reversion",
+                initial_cash=initial_cash,
                 strategy_params={"window": window, "threshold": threshold}
             )
             
@@ -135,7 +137,7 @@ def export_results_to_csv(results, output_path):
     return results_df
 
 
-def optimize_rsi(df, window_range=(5, 30), window_step=5, overbought=70, oversold=30):
+def optimize_rsi(df, window_range=(5, 30), window_step=5, overbought=70, oversold=30, initial_cash=10000):
     results = []
     min_window, max_window = window_range
     windows = range(min_window, max_window + 1, window_step)
@@ -149,6 +151,7 @@ def optimize_rsi(df, window_range=(5, 30), window_step=5, overbought=70, oversol
             result = run_backtest(
                 df,
                 strategy_name="rsi",
+                initial_cash=initial_cash,
                 strategy_params={"window": window, "overbought": overbought, "oversold": oversold}
             )
             
@@ -167,7 +170,7 @@ def optimize_rsi(df, window_range=(5, 30), window_step=5, overbought=70, oversol
 
 
 def optimize_macd(df, fast_range=(5, 20), slow_range=(20, 35), signal_range=(5, 15),
-                  fast_step=3, slow_step=3, signal_step=2):
+                  fast_step=3, slow_step=3, signal_step=2, initial_cash=10000):
     results = []
     
     fast_vals = list(range(fast_range[0], fast_range[1] + 1, fast_step))
@@ -189,6 +192,7 @@ def optimize_macd(df, fast_range=(5, 20), slow_range=(20, 35), signal_range=(5, 
             result = run_backtest(
                 df,
                 strategy_name="macd",
+                initial_cash=initial_cash,
                 strategy_params={"fast": fast, "slow": slow, "signal_window": signal_window}
             )
             
@@ -208,7 +212,7 @@ def optimize_macd(df, fast_range=(5, 20), slow_range=(20, 35), signal_range=(5, 
     return results
 
 
-def optimize_bollinger_bands(df, window_range=(10, 30), window_step=5, num_std=2):
+def optimize_bollinger_bands(df, window_range=(10, 30), window_step=5, num_std=2, initial_cash=10000):
     results = []
     min_window, max_window = window_range
     windows = range(min_window, max_window + 1, window_step)
@@ -222,6 +226,7 @@ def optimize_bollinger_bands(df, window_range=(10, 30), window_step=5, num_std=2
             result = run_backtest(
                 df,
                 strategy_name="bollinger_bands",
+                initial_cash=initial_cash,
                 strategy_params={"window": window, "num_std": num_std}
             )
             
