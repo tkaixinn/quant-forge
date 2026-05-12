@@ -24,11 +24,6 @@ app = Flask(__name__)
 CORS(app)
 
 
-if __name__ == "__main__":
-    # When app.py is executed directly, honor PORT env var (default 5002)
-    port = int(os.getenv("PORT", "5002"))
-    app.run(host="0.0.0.0", port=port, debug=True)
-
 AVAILABLE_STRATEGIES = [
     {
         "name": "momentum",
