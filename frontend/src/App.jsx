@@ -5,8 +5,8 @@ import EquityCurve from './components/EquityCurve'
 import MetricsCards from './components/MetricsCards'
 import TradeLog from './components/TradeLog'
 
-// Change this to your Railway URL when deployed
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002'
+// Prefer explicit Vercel env var; fallback to deployed Railway API.
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://quant-forge-production.up.railway.app'
 
 export default function App() {
   const [loading, setLoading] = useState(false)
