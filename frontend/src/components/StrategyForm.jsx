@@ -9,7 +9,7 @@ const STRATEGIES = [
   {
     name: 'mean_reversion',
     label: 'Mean Reversion',
-    description: 'Buy oversold, sell overbought'
+    description: 'Buy oversold (z < -threshold), sell overbought (z > threshold), flat near mean'
   },
   {
     name: 'rsi',
@@ -19,60 +19,79 @@ const STRATEGIES = [
   {
     name: 'macd',
     label: 'MACD',
-    description: 'Moving Average Convergence Divergence'
+    description: 'Moving Average Convergence Divergence crossover'
   },
   {
     name: 'bollinger_bands',
     label: 'Bollinger Bands',
-    description: 'Upper/lower band breakouts'
+    description: 'Buy below lower band, sell above upper band'
   }
 ]
 
 export default function StrategyForm({ onBacktest, onOptimize, loading }) {
   const [ticker, setTicker] = useState('MSFT')
   const [strategy, setStrategy] = useState('momentum')
-  const [mode, setMode] = useState('backtest') // 'backtest' or 'optimize'
-  
-  // Backtest params
+  const [mode, setMode] = useState('backtest')
+
+  // Shared param
   const [window, setWindow] = useState(20)
+
+  // Mean reversion specific
   const [threshold, setThreshold] = useState(2)
+
+  // Bollinger Bands specific — separate num_std so it's independent from threshold
+  const [numStd, setNumStd] = useState(2)
+
+  // RSI specific
+  const [rsiOverbought, setRsiOverbought] = useState(70)
+  const [rsiOversold, setRsiOversold] = useState(30)
+
+  // MACD specific
+  const [macdFast, setMacdFast] = useState(12)
+  const [macdSlow, setMacdSlow] = useState(26)
+  const [macdSignal, setMacdSignal] = useState(9)
+
   const [initialCash, setInitialCash] = useState(10000)
-  
-  // Date range (default to 5 years back)
-  const getDefaultEndDate = () => {
-    const today = new Date()
-    return today.toISOString().split('T')[0]
-  }
-  
+
+  const getDefaultEndDate = () => new Date().toISOString().split('T')[0]
   const getDefaultStartDate = () => {
-    const fiveYearsAgo = new Date()
-    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5)
-    return fiveYearsAgo.toISOString().split('T')[0]
+    const d = new Date()
+    d.setFullYear(d.getFullYear() - 5)
+    return d.toISOString().split('T')[0]
   }
-  
+
   const [startDate, setStartDate] = useState(getDefaultStartDate())
   const [endDate, setEndDate] = useState(getDefaultEndDate())
   const [availableStart, setAvailableStart] = useState(null)
   const [availableEnd, setAvailableEnd] = useState(null)
-  
-  // Optimize ranges
+
   const [windowMin, setWindowMin] = useState(10)
   const [windowMax, setWindowMax] = useState(50)
   const [windowStep, setWindowStep] = useState(5)
 
   const handleBacktest = () => {
-    const params = {}
-    if (strategy === 'momentum' || strategy === 'rsi' || strategy === 'bollinger_bands') {
-      params.window = parseInt(window)
+    let params = {}
+
+    if (strategy === 'momentum') {
+      params = { window: parseInt(window) }
     } else if (strategy === 'mean_reversion') {
-      params.window = parseInt(window)
-      params.threshold = parseFloat(threshold)
+      params = { window: parseInt(window), threshold: parseFloat(threshold) }
+    } else if (strategy === 'bollinger_bands') {
+      params = { window: parseInt(window), num_std: parseFloat(numStd) }
+    } else if (strategy === 'rsi') {
+      params = {
+        window: parseInt(window),
+        overbought: parseInt(rsiOverbought),
+        oversold: parseInt(rsiOversold)
+      }
     } else if (strategy === 'macd') {
-      params.fast = 12
-      params.slow = 26
-      params.signal = 9
+      params = {
+        fast: parseInt(macdFast),
+        slow: parseInt(macdSlow),
+        signal_window: parseInt(macdSignal)  // fixed: was 'signal', must be 'signal_window'
+      }
     }
-    
+
     onBacktest({ ticker, strategy, params, initialCash: parseFloat(initialCash), startDate, endDate })
   }
 
@@ -91,7 +110,6 @@ export default function StrategyForm({ onBacktest, onOptimize, loading }) {
     })
   }
 
-  // Fetch available date range for ticker and clamp defaults
   useEffect(() => {
     let cancelled = false
     async function fetchRange() {
@@ -103,18 +121,11 @@ export default function StrategyForm({ onBacktest, onOptimize, loading }) {
         if (cancelled) return
         setAvailableStart(data.earliest)
         setAvailableEnd(data.latest)
-
-        // Clamp current selected dates to available range
         const availStart = new Date(data.earliest)
         const availEnd = new Date(data.latest)
-        const curStart = new Date(startDate)
-        const curEnd = new Date(endDate)
-
-        if (curStart < availStart) setStartDate(data.earliest)
-        if (curEnd > availEnd) setEndDate(data.latest)
-      } catch (err) {
-        // ignore network errors for now
-      }
+        if (new Date(startDate) < availStart) setStartDate(data.earliest)
+        if (new Date(endDate) > availEnd) setEndDate(data.latest)
+      } catch (err) {}
     }
     fetchRange()
     return () => { cancelled = true }
@@ -124,7 +135,6 @@ export default function StrategyForm({ onBacktest, onOptimize, loading }) {
     <div className="card sticky top-8">
       <h2 className="text-xl font-bold mb-4 text-gray-900">Configuration</h2>
 
-      {/* Ticker Input */}
       <div className="mb-4">
         <label className="label">Stock Ticker</label>
         <input
@@ -138,7 +148,6 @@ export default function StrategyForm({ onBacktest, onOptimize, loading }) {
         <p className="text-xs text-gray-500 mt-1">5+ years of historical data</p>
       </div>
 
-      {/* Strategy Selector */}
       <div className="mb-4">
         <label className="label">Strategy</label>
         <select
@@ -148,9 +157,7 @@ export default function StrategyForm({ onBacktest, onOptimize, loading }) {
           disabled={loading}
         >
           {STRATEGIES.map((s) => (
-            <option key={s.name} value={s.name}>
-              {s.label}
-            </option>
+            <option key={s.name} value={s.name}>{s.label}</option>
           ))}
         </select>
         <p className="text-xs text-gray-600 mt-2">
@@ -169,10 +176,8 @@ export default function StrategyForm({ onBacktest, onOptimize, loading }) {
           className="input"
           disabled={loading}
         />
-        <p className="text-xs text-gray-500 mt-1">Dollar amounts scale with this value.</p>
       </div>
 
-      {/* Date Range Picker */}
       <div className="mb-4">
         <label className="label">Date Range</label>
         <div className="flex gap-2 items-center min-w-0">
@@ -201,21 +206,15 @@ export default function StrategyForm({ onBacktest, onOptimize, loading }) {
             <p className="text-xs text-gray-500 mt-1">To</p>
           </div>
         </div>
-        <p className="text-xs text-gray-500 mt-2">
-          Note: Historical data will be downloaded for this period.
-        </p>
       </div>
 
-      {/* Mode Toggle */}
       <div className="mb-4">
         <label className="label">Mode</label>
         <div className="flex gap-2">
           <button
             onClick={() => setMode('backtest')}
             className={`flex-1 py-2 rounded-lg font-medium transition-colors ${
-              mode === 'backtest'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              mode === 'backtest' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
             disabled={loading}
           >
@@ -224,9 +223,7 @@ export default function StrategyForm({ onBacktest, onOptimize, loading }) {
           <button
             onClick={() => setMode('optimize')}
             className={`flex-1 py-2 rounded-lg font-medium transition-colors ${
-              mode === 'optimize'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              mode === 'optimize' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
             disabled={loading}
           >
@@ -235,47 +232,119 @@ export default function StrategyForm({ onBacktest, onOptimize, loading }) {
         </div>
       </div>
 
-      {/* Backtest Params */}
       {mode === 'backtest' && (
         <>
-          {(strategy === 'momentum' || strategy === 'rsi' || strategy === 'bollinger_bands') && (
+          {/* Window — shown for all strategies except MACD */}
+          {strategy !== 'macd' && (
             <div className="mb-4">
               <label className="label">Window (days)</label>
               <input
                 type="number"
                 value={window}
                 onChange={(e) => setWindow(e.target.value)}
-                min="5"
-                max="100"
+                min="5" max="100"
                 className="input"
                 disabled={loading}
               />
             </div>
           )}
-          
+
+          {/* Mean reversion: threshold */}
           {strategy === 'mean_reversion' && (
+            <div className="mb-4">
+              <label className="label">Threshold (σ) — z-score trigger</label>
+              <input
+                type="number"
+                value={threshold}
+                onChange={(e) => setThreshold(e.target.value)}
+                min="0.5" max="5" step="0.5"
+                className="input"
+                disabled={loading}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Buy when z &lt; −{threshold}, sell when z &gt; {threshold}
+              </p>
+            </div>
+          )}
+
+          {/* Bollinger Bands: num_std — separate from threshold */}
+          {strategy === 'bollinger_bands' && (
+            <div className="mb-4">
+              <label className="label">Num Std Devs — band width</label>
+              <input
+                type="number"
+                value={numStd}
+                onChange={(e) => setNumStd(e.target.value)}
+                min="0.5" max="5" step="0.5"
+                className="input"
+                disabled={loading}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Standard deviations from mean for upper/lower bands
+              </p>
+            </div>
+          )}
+
+          {/* RSI: overbought / oversold */}
+          {strategy === 'rsi' && (
             <>
               <div className="mb-4">
-                <label className="label">Window (days)</label>
+                <label className="label">Oversold threshold (buy below)</label>
                 <input
                   type="number"
-                  value={window}
-                  onChange={(e) => setWindow(e.target.value)}
-                  min="5"
-                  max="100"
+                  value={rsiOversold}
+                  onChange={(e) => setRsiOversold(e.target.value)}
+                  min="10" max="45" step="5"
                   className="input"
                   disabled={loading}
                 />
               </div>
               <div className="mb-4">
-                <label className="label">Threshold (σ)</label>
+                <label className="label">Overbought threshold (sell above)</label>
                 <input
                   type="number"
-                  value={threshold}
-                  onChange={(e) => setThreshold(e.target.value)}
-                  min="0.5"
-                  max="5"
-                  step="0.5"
+                  value={rsiOverbought}
+                  onChange={(e) => setRsiOverbought(e.target.value)}
+                  min="55" max="90" step="5"
+                  className="input"
+                  disabled={loading}
+                />
+              </div>
+            </>
+          )}
+
+          {/* MACD: fast / slow / signal */}
+          {strategy === 'macd' && (
+            <>
+              <div className="mb-4">
+                <label className="label">Fast EMA period</label>
+                <input
+                  type="number"
+                  value={macdFast}
+                  onChange={(e) => setMacdFast(e.target.value)}
+                  min="3" max="20"
+                  className="input"
+                  disabled={loading}
+                />
+              </div>
+              <div className="mb-4">
+                <label className="label">Slow EMA period</label>
+                <input
+                  type="number"
+                  value={macdSlow}
+                  onChange={(e) => setMacdSlow(e.target.value)}
+                  min="10" max="50"
+                  className="input"
+                  disabled={loading}
+                />
+              </div>
+              <div className="mb-4">
+                <label className="label">Signal line period</label>
+                <input
+                  type="number"
+                  value={macdSignal}
+                  onChange={(e) => setMacdSignal(e.target.value)}
+                  min="3" max="20"
                   className="input"
                   disabled={loading}
                 />
@@ -293,42 +362,20 @@ export default function StrategyForm({ onBacktest, onOptimize, loading }) {
         </>
       )}
 
-      {/* Optimize Params */}
       {mode === 'optimize' && (
         <>
           <div className="mb-4">
             <label className="label">Window Range</label>
             <div className="flex gap-2 items-center">
-              <input
-                type="number"
-                value={windowMin}
-                onChange={(e) => setWindowMin(e.target.value)}
-                className="input flex-1"
-                disabled={loading}
-              />
+              <input type="number" value={windowMin} onChange={(e) => setWindowMin(e.target.value)} className="input flex-1" disabled={loading} />
               <span className="text-gray-600">to</span>
-              <input
-                type="number"
-                value={windowMax}
-                onChange={(e) => setWindowMax(e.target.value)}
-                className="input flex-1"
-                disabled={loading}
-              />
+              <input type="number" value={windowMax} onChange={(e) => setWindowMax(e.target.value)} className="input flex-1" disabled={loading} />
             </div>
           </div>
-
           <div className="mb-4">
             <label className="label">Window Step</label>
-            <input
-              type="number"
-              value={windowStep}
-              onChange={(e) => setWindowStep(e.target.value)}
-              min="1"
-              className="input"
-              disabled={loading}
-            />
+            <input type="number" value={windowStep} onChange={(e) => setWindowStep(e.target.value)} min="1" className="input" disabled={loading} />
           </div>
-
           <button
             onClick={handleOptimize}
             disabled={loading || !ticker}
