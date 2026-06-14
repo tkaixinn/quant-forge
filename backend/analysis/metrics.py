@@ -8,11 +8,27 @@ def compute_returns(portfolio_df):
     return portfolio_df["returns"].dropna()
 
 
+def compute_trade_returns(df):
+    """Compute return for each completed buy→sell round trip."""
+    trade_returns = []
+    entry_price = None
+
+    for _, row in df.iterrows():
+        if row["trade_action"] == 1:
+            entry_price = row["Close"]
+        elif row["trade_action"] == -1 and entry_price is not None:
+            trade_return = (row["Close"] - entry_price) / entry_price
+            trade_returns.append(trade_return)
+            entry_price = None
+
+    return pd.Series(trade_returns)
+
+
 def sharpe_ratio(returns, risk_free_rate=0.0, periods_per_year=252):
     excess = returns - risk_free_rate / periods_per_year
-    if returns.std() == 0:
+    if excess.std(ddof=0) == 0:
         return 0
-    return np.sqrt(periods_per_year) * excess.mean() / excess.std()
+    return np.sqrt(periods_per_year) * excess.mean() / excess.std(ddof=0)
 
 
 def max_drawdown(portfolio_series):
