@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { API_BASE_URL } from '../lib/api'
 
 const STRATEGIES = [
   {
