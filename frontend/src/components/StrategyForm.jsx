@@ -34,7 +34,7 @@ export default function StrategyForm({ onBacktest, onOptimize, loading }) {
   const [mode, setMode] = useState('backtest')
 
   // Shared param
-  const [window, setWindow] = useState(20)
+  const [windowSize, setWindowSize] = useState(20)
 
   // Mean reversion specific
   const [threshold, setThreshold] = useState(2)
@@ -73,14 +73,14 @@ export default function StrategyForm({ onBacktest, onOptimize, loading }) {
     let params = {}
 
     if (strategy === 'momentum') {
-      params = { window: parseInt(window) }
+      params = { window: parseInt(windowSize) }
     } else if (strategy === 'mean_reversion') {
-      params = { window: parseInt(window), threshold: parseFloat(threshold) }
+      params = { window: parseInt(windowSize), threshold: parseFloat(threshold) }
     } else if (strategy === 'bollinger_bands') {
-      params = { window: parseInt(window), num_std: parseFloat(numStd) }
+      params = { window: parseInt(windowSize), num_std: parseFloat(numStd) }
     } else if (strategy === 'rsi') {
       params = {
-        window: parseInt(window),
+        window: parseInt(windowSize),
         overbought: parseInt(rsiOverbought),
         oversold: parseInt(rsiOversold)
       }
@@ -240,8 +240,8 @@ export default function StrategyForm({ onBacktest, onOptimize, loading }) {
               <label className="label">Window (days)</label>
               <input
                 type="number"
-                value={window}
-                onChange={(e) => setWindow(e.target.value)}
+                value={windowSize}
+                onChange={(e) => setWindowSize(e.target.value)}
                 min="5" max="100"
                 className="input"
                 disabled={loading}
