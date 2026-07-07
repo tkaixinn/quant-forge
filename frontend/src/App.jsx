@@ -40,6 +40,8 @@ export default function App() {
         benchmark_ticker: 'SPY'
       })
       setResults(response.data)
+      console.log('chart_data length:', response.data?.chart_data?.length)
+      console.log('first row:', response.data?.chart_data?.[0])
     } catch (err) {
       setError(err.response?.data?.error || 'Backtest failed. Make sure the API is running.')
       setResults(null)

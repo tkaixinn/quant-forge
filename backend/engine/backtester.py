@@ -1,6 +1,7 @@
 import pandas as pd
 import pathlib
 import sys
+from datetime import timedelta
 import yfinance as yf
 
 sys.path.insert(
@@ -28,7 +29,10 @@ from data.load_data import load_csv
 filename = input("Enter CSV filename (strategy asset): ")
 df, resolved_path = load_csv(filename)
 
-spy_df = yf.download("SPY", start=df["Date"].iloc[0], end=df["Date"].iloc[-1])
+benchmark_start = pd.to_datetime(df["Date"].iloc[0])
+benchmark_end = pd.to_datetime(df["Date"].iloc[-1]) + timedelta(days=1)
+
+spy_df = yf.download("SPY", start=benchmark_start, end=benchmark_end)
 spy_df = spy_df.reset_index()
 # yfinance can return MultiIndex columns when downloading with tickers;
 # flatten them to single-level names like Close_SPY so merges work predictably

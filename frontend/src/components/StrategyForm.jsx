@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { API_BASE_URL } from '../lib/api'
 
 const STRATEGIES = [
   {
@@ -114,7 +115,7 @@ export default function StrategyForm({ onBacktest, onOptimize, loading }) {
     let cancelled = false
     async function fetchRange() {
       try {
-        const url = `${import.meta.env.VITE_API_URL || 'http://localhost:5002'}/data_range?ticker=${encodeURIComponent(ticker)}`
+        const url = `${API_BASE_URL}/data_range?ticker=${encodeURIComponent(ticker)}`
         const res = await fetch(url)
         if (!res.ok) return
         const data = await res.json()

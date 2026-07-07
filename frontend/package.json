@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "open https://quant-forge.vercel.app/",
     "build": "vite build",
     "preview": "vite preview"
   },

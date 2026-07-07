@@ -11,26 +11,48 @@ import {
 } from 'recharts'
 
 export default function EquityCurve({ data }) {
-  if (!data.chart_data || data.chart_data.length === 0) {
-    return null
+  const rawChartData = Array.isArray(data.chart_data) ? data.chart_data : []
+
+  const chartData = rawChartData
+    .map((row) => ({
+      date: row.Date ?? row.date,
+      strategy: Number(row.portfolio_value ?? row.strategy ?? row.Portfolio_Value),
+      spy: Number(row.SPY_Portfolio_Value ?? row.SPY_Close ?? row.spy),
+      close: Number(row.Close ?? row.close),
+      signal: row.signal
+    }))
+    .filter((row) => row.date && Number.isFinite(row.strategy))
+    .sort((left, right) => String(left.date).localeCompare(String(right.date)))
+
+  if (chartData.length === 0) {
+    return (
+      <div className="card mb-6">
+        <h2 className="text-xl font-bold mb-2 text-gray-900">Equity Curve</h2>
+        <p className="text-sm text-gray-600">
+          No chartable backtest data was returned for this run.
+        </p>
+      </div>
+    )
   }
 
-  // Prepare chart data
-  const chartData = data.chart_data.map((row) => ({
-    date: row.Date,
-    strategy: row.portfolio_value,
-    spy: row.SPY_Portfolio_Value ?? row.SPY_Close,
-    close: row.Close,
-    signal: row.signal
-  }))
+  const strategyValues = chartData.map((row) => row.strategy).filter(Number.isFinite)
+  const minStrategy = Math.min(...strategyValues)
+  const maxStrategy = Math.max(...strategyValues)
+  const isFlatStrategy = strategyValues.length > 0 && Math.abs(maxStrategy - minStrategy) < 1e-6
+  const showDots = isFlatStrategy || chartData.length < 20
 
   // Format for better readability
   const formatValue = (value) => {
+    if (!Number.isFinite(value)) {
+      return '$0'
+    }
     if (value >= 1000) {
       return `$${(value / 1000).toFixed(1)}k`
     }
     return `$${value.toFixed(0)}`
   }
+
+  const showSpy = chartData.some((row) => Number.isFinite(row.spy))
 
   return (
     <div className="card mb-6">
@@ -42,7 +64,7 @@ export default function EquityCurve({ data }) {
             dataKey="date"
             stroke="#94a3b8"
             tick={{ fontSize: 12 }}
-            interval={Math.floor(chartData.length / 10)}
+            interval={Math.max(1, Math.floor(chartData.length / 10))}
           />
           <YAxis
             stroke="#94a3b8"
@@ -59,22 +81,31 @@ export default function EquityCurve({ data }) {
             type="monotone"
             dataKey="strategy"
             stroke="#2563eb"
-            dot={false}
+            dot={showDots ? { r: 2 } : false}
+            activeDot={showDots ? { r: 4 } : false}
             strokeWidth={2}
             name="Strategy"
             isAnimationActive={false}
           />
-          <Line
-            type="monotone"
-            dataKey="spy"
-            stroke="#10b981"
-            dot={false}
-            strokeWidth={2}
-            name="S&P 500 (SPY)"
-            isAnimationActive={false}
-          />
+          {showSpy && (
+            <Line
+              type="monotone"
+              dataKey="spy"
+              stroke="#10b981"
+              dot={showDots ? { r: 2 } : false}
+              activeDot={showDots ? { r: 4 } : false}
+              strokeWidth={2}
+              name="S&P 500 (SPY)"
+              isAnimationActive={false}
+            />
+          )}
         </LineChart>
       </ResponsiveContainer>
+      {isFlatStrategy && (
+        <p className="text-xs text-amber-700 mt-3 text-center">
+          This strategy stayed flat during the selected period, so the equity curve may look nearly horizontal.
+        </p>
+      )}
       <p className="text-xs text-gray-600 mt-4 text-center">
         Blue: Your strategy | Green: S&P 500 benchmark
       </p>

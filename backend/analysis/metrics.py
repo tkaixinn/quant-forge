@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+from engine.execution import TRANSACTION_COST_RATE
+
 
 def compute_returns(portfolio_df):
     portfolio_df = portfolio_df.copy()
@@ -17,7 +19,7 @@ def compute_trade_returns(df):
         if row["trade_action"] == 1:
             entry_price = row["Close"]
         elif row["trade_action"] == -1 and entry_price is not None:
-            trade_return = (row["Close"] - entry_price) / entry_price
+            trade_return = ((1 - TRANSACTION_COST_RATE) ** 2 * row["Close"] / entry_price) - 1
             trade_returns.append(trade_return)
             entry_price = None
 

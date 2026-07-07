@@ -1,5 +1,6 @@
 import pandas as pd
 import yfinance as yf
+from datetime import timedelta
 from analysis.report import generate_strategy_report
 from strategies.strategies import (
     generate_momentum_signal,
@@ -25,10 +26,13 @@ def run_backtest(
 
     df = df.copy()
 
+    benchmark_start = pd.to_datetime(df["Date"].iloc[0])
+    benchmark_end = pd.to_datetime(df["Date"].iloc[-1]) + timedelta(days=1)
+
     spy_df = yf.download(
         benchmark_ticker,
-        start=df["Date"].iloc[0],
-        end=df["Date"].iloc[-1],
+        start=benchmark_start,
+        end=benchmark_end,
         progress=False
     )
     spy_df = spy_df.reset_index()
