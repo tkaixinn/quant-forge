@@ -24,6 +24,9 @@ export default function EquityCurve({ data }) {
     .filter((row) => row.date && Number.isFinite(row.strategy))
     .sort((left, right) => String(left.date).localeCompare(String(right.date)))
 
+  console.log('EquityCurve chartData length:', chartData.length)
+  console.log('EquityCurve first row:', chartData[0])
+
   if (chartData.length === 0) {
     return (
       <div className="card mb-6">
@@ -41,7 +44,6 @@ export default function EquityCurve({ data }) {
   const isFlatStrategy = strategyValues.length > 0 && Math.abs(maxStrategy - minStrategy) < 1e-6
   const showDots = isFlatStrategy || chartData.length < 20
 
-  // Format for better readability
   const formatValue = (value) => {
     if (!Number.isFinite(value)) {
       return '$0'
