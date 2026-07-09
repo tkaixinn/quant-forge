@@ -8,6 +8,18 @@ import TradeLog from './components/TradeLog'
 // Prefer explicit Vercel env var; fallback to deployed Railway API.
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://quant-forge-production.up.railway.app'
 
+const parseApiResponse = (data) => {
+  if (typeof data !== 'string') {
+    return data
+  }
+
+  try {
+    return JSON.parse(data)
+  } catch {
+    return data
+  }
+}
+
 export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -38,10 +50,10 @@ export default function App() {
         start_date: formData.startDate,
         end_date: formData.endDate,
         benchmark_ticker: 'SPY'
+      }, { responseType: 'json' 
       })
-      setResults(response.data)
-      console.log('chart_data length:', response.data?.chart_data?.length)
-      console.log('first row:', response.data?.chart_data?.[0])
+      const parsed = parseApiResponse(response.data)
+      setResults(parsed)
     } catch (err) {
       setError(err.response?.data?.error || 'Backtest failed. Make sure the API is running.')
       setResults(null)
@@ -75,7 +87,7 @@ export default function App() {
         signal_step: formData.signalStep || 2,
         top_n: formData.topN || 5
       })
-      setResults(response.data)
+      setResults(parseApiResponse(response.data))
     } catch (err) {
       setError(err.response?.data?.error || 'Optimization failed. Make sure the API is running.')
       setResults(null)
@@ -217,4 +229,6 @@ export default function App() {
       </footer>
     </div>
   )
+
+  
 }

@@ -8,6 +8,7 @@ def generate_momentum_signal(df, window=20):
 
     df["signal"] = 0
     df.loc[df["momentum"] > 0, "signal"] = 1
+    df.loc[df["momentum"] < 0, "signal"] = -1
 
     return df
 

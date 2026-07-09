@@ -1,6 +1,7 @@
 import pathlib
 import sys
 import socket
+import math
 from datetime import date
 
 from flask import Flask, jsonify, request
@@ -80,6 +81,18 @@ def _parse_range(value, default_type=int):
 
 def _json_error(message, status_code=400):
     return jsonify({"error": message}), status_code
+
+
+def _sanitize_json_value(value):
+    if isinstance(value, dict):
+        return {key: _sanitize_json_value(inner_value) for key, inner_value in value.items()}
+    if isinstance(value, list):
+        return [_sanitize_json_value(inner_value) for inner_value in value]
+    if isinstance(value, tuple):
+        return [_sanitize_json_value(inner_value) for inner_value in value]
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
 
 
 def _port_is_available(port):
@@ -232,7 +245,10 @@ def backtest():
             strategy_params=strategy_params,
             benchmark_ticker=benchmark_ticker,
         )
-        return jsonify(_serialize_backtest_result(result, ticker, strategy))
+        response = jsonify(_serialize_backtest_result(result, ticker, strategy))
+        response.headers['Content-Type'] = 'application/json'
+        return response
+    
     except FileNotFoundError:
         return _json_error(f"Could not find data for '{ticker}'", 404)
     except ValueError as exc:
@@ -331,7 +347,7 @@ def optimize():
             return _json_error("No valid optimization results found", 400)
 
         serialized_results = [
-            _serialize_optimization_result(result, ticker, strategy)
+            _sanitize_json_value(_serialize_optimization_result(result, ticker, strategy))
             for result in results[:top_n]
         ]
 

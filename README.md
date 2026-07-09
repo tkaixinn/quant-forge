@@ -34,13 +34,7 @@ Pick a stock ticker, choose a strategy, set a date range, hit Run, and get live 
 - SPY downloaded alongside each backtest as the benchmark
 
 ### 2. Signal Generation
-Five trading strategies, each outputting +1 (buy), -1 (sell), or 0 (flat) per day:
-
-**Momentum** — Buy when N-day price return is positive, sell when negative.
-- Formula: `signal = +1 if pct_change(N) > 0 else -1`
-- Works in: strong trending markets
-- Fails in: choppy, mean-reverting markets
-- Default: window = 20 days
+Four trading strategies, each outputting +1 (buy), -1 (sell), or 0 (flat) per day:
 
 **Mean Reversion** — Buy when price is statistically oversold, sell when overbought, exit when price returns near the mean.
 - Formula: `z = (price - SMA) / STD`. Buy if z < −threshold, sell if z > threshold, flat if |z| < 0.5

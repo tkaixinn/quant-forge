@@ -2,11 +2,6 @@ import React, { useState, useEffect } from 'react'
 
 const STRATEGIES = [
   {
-    name: 'momentum',
-    label: 'Momentum',
-    description: 'Buy positive momentum, sell negative momentum'
-  },
-  {
     name: 'mean_reversion',
     label: 'Mean Reversion',
     description: 'Buy oversold (z < -threshold), sell overbought (z > threshold), flat near mean'
@@ -30,7 +25,7 @@ const STRATEGIES = [
 
 export default function StrategyForm({ onBacktest, onOptimize, loading }) {
   const [ticker, setTicker] = useState('MSFT')
-  const [strategy, setStrategy] = useState('momentum')
+  const [strategy, setStrategy] = useState('rsi')
   const [mode, setMode] = useState('backtest')
 
   // Shared param
